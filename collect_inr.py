@@ -23,7 +23,9 @@ def create_session():
         status_forcelist=[429, 500, 502, 503, 504],
     )
     adapter = HTTPAdapter(
-        max_retries=retry_strategy, pool_connections=10, pool_maxsize=20
+        max_retries=retry_strategy,
+        pool_connections=10,
+        pool_maxsize=20
     )
     session.mount("http://", adapter)
     session.mount("https://", adapter)
@@ -32,10 +34,8 @@ def create_session():
 
 def get_currency_rate(session, date):
     """Получить курс валюты для конкретной даты с обработкой ошибок"""
-    url = (
-        f"https://www.cbr-xml-daily.ru/archive/{date.year}/"
-        f"{date.month:02d}/{date.day:02d}/daily_json.js"
-    )
+    url = (f"https://www.cbr-xml-daily.ru/archive/{date.year}/"
+           f"{date.month:02d}/{date.day:02d}/daily_json.js")
 
     for attempt in range(3):
         try:
@@ -54,19 +54,26 @@ def get_currency_rate(session, date):
                 return None
         except Exception as e:
             if attempt < 2:
-                logger.warning(f"Ошибка для {date.date()}, попытка {attempt + 1}: {e}")
+                logger.warning(
+                    f"Ошибка для {date.date()}, попытка {attempt + 1}: {e}"
+                )
                 time.sleep(2)
                 continue
             else:
-                logger.error(f"Не удалось загрузить {date.date()} после 3 попыток: {e}")
+                logger.error(
+                    f"Не удалось загрузить {date.date()} после 3 попыток: {e}"
+                )
                 return None
     return None
 
 
 def save_temp_data(dates, rates, filename):
     """Сохранить промежуточные данные"""
-    temp_df = pd.DataFrame({"date": dates, "rate": rates})
-    temp_df.to_csv(filename, index=False, encoding="utf-8")
+    temp_df = pd.DataFrame({
+        'date': dates,
+        'rate': rates
+    })
+    temp_df.to_csv(filename, index=False, encoding='utf-8')
 
 
 def collect_all_rates(start_date, end_date, save_every=100):
@@ -80,8 +87,8 @@ def collect_all_rates(start_date, end_date, save_every=100):
     if os.path.exists(temp_file):
         try:
             temp_df = pd.read_csv(temp_file)
-            all_dates = pd.to_datetime(temp_df["date"]).tolist()
-            all_rates = temp_df["rate"].tolist()
+            all_dates = pd.to_datetime(temp_df['date']).tolist()
+            all_rates = temp_df['rate'].tolist()
             if all_dates:
                 current_date = all_dates[-1] + timedelta(days=1)
                 logger.info(
@@ -94,7 +101,9 @@ def collect_all_rates(start_date, end_date, save_every=100):
     session = create_session()
     remaining_days = (end_date - current_date).days
 
-    logger.info(f"Начинаем сбор данных с {current_date.date()} по {end_date.date()}")
+    logger.info(
+        f"Начинаем сбор данных с {current_date.date()} по {end_date.date()}"
+    )
     print(f"\n📊 Уже собрано: {len(all_dates)} записей")
     print(f"📅 Осталось дней: {remaining_days}")
 
@@ -127,9 +136,12 @@ def collect_all_rates(start_date, end_date, save_every=100):
 
 def save_to_csv(dates, rates, filename="dataset/dataset.csv"):
     """Сохранить окончательные данные в CSV файл"""
-    df = pd.DataFrame({"date": dates, "rate": rates})
+    df = pd.DataFrame({
+        'date': dates,
+        'rate': rates
+    })
 
-    df.to_csv(filename, index=False, encoding="utf-8")
+    df.to_csv(filename, index=False, encoding='utf-8')
     logger.success(f"Сохранено {len(dates)} записей в {filename}")
     print(f"\n✅ Сохранено {len(dates)} записей в {filename}")
 
@@ -139,12 +151,15 @@ def save_to_csv(dates, rates, filename="dataset/dataset.csv"):
         print(f"   Максимальный курс: {df['rate'].max():.4f} руб.")
         print(f"   Средний курс: {df['rate'].mean():.4f} руб.")
         print(
-            f"   Период: с {df['date'].min().date()} " f"по {df['date'].max().date()}"
+            f"   Период: с {df['date'].min().date()} "
+            f"по {df['date'].max().date()}"
         )
 
-        with open("dataset/metadata.txt", "w", encoding="utf-8") as f:
+        with open("dataset/metadata.txt", "w", encoding='utf-8') as f:
             f.write(f"Валюта: {CURRENCY} - Индийская рупия\n")
-            f.write(f"Период: {df['date'].min().date()} - {df['date'].max().date()}\n")
+            f.write(
+                f"Период: {df['date'].min().date()} - {df['date'].max().date()}\n"
+            )
             f.write(f"Количество дней: {len(dates)}\n")
             f.write(f"Минимальный курс: {df['rate'].min():.4f}\n")
             f.write(f"Максимальный курс: {df['rate'].max():.4f}\n")
@@ -154,15 +169,16 @@ def save_to_csv(dates, rates, filename="dataset/dataset.csv"):
 
 def main():
     """Основная функция"""
-    print("🚀 Оптимизированный сбор курса индийской рупии (INR)")
+    print("🚀 Сбор курса индийской рупии (INR)")
     print("=" * 50)
 
     print("Выберите режим:")
     print("1 - Тестовый режим (7 дней, март 2024)")
     print("2 - Полный сбор (с 2006 года по сегодня)")
-    print("3 - Проверить существующий файл")
+    print("3 - За последний год")
+    print("4 - Проверить существующий файл")
 
-    choice = input("Ваш выбор (1, 2 или 3): ").strip()
+    choice = input("Ваш выбор (1, 2, 3 или 4): ").strip()
 
     if choice == "1":
         start_date = datetime(2024, 3, 1)
@@ -175,6 +191,11 @@ def main():
         print("⏱️ Ориентировочное время: 5-10 минут")
         print("💾 Данные будут сохраняться каждые 100 записей")
     elif choice == "3":
+        start_date = datetime.now() - timedelta(days=365)
+        end_date = datetime.now()
+        print(f"\n📅 За последний год: с {start_date.date()} по {end_date.date()}")
+        print("⏱️ Ориентировочное время: 1-2 минуты")
+    elif choice == "4":
         if os.path.exists("dataset/dataset.csv"):
             df = pd.read_csv("dataset/dataset.csv")
             print("\n✅ Найден файл dataset/dataset.csv")
@@ -202,7 +223,7 @@ def main():
         return
 
     confirm = input("\nНачать загрузку? (да/нет): ").strip().lower()
-    if confirm != "да":
+    if confirm != 'да':
         print("Загрузка отменена.")
         return
 
